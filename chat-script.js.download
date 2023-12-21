@@ -1,0 +1,249 @@
+
+
+fetchContentAndDisplay("#ListScrole");
+
+//hide the group details div
+$(".group-details").hide();
+
+
+
+
+
+//int text area
+
+let textarea = document.querySelector(".minthr-chat-content textarea");
+
+textarea.addEventListener("input", (e) => {
+    const maxLines = 5;
+    const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight);
+    textarea.style.height = "0";
+    let textareaHeight = e.target.scrollHeight;
+    textarea.style.height = `${textareaHeight}px`;
+    const lines = Math.min(maxLines, textarea.scrollHeight / lineHeight);
+    textarea.style.height = `${lines * lineHeight}px`;
+});
+$(".details").click(function () {
+    var id = $(".details").data("id");
+    var url = $(this).data("url") + "/" + id;
+    $.get(url).done(function (response) {
+        $(".minthr-chat-main").hide();
+        $(".minthr-chat-main.empty").hide();
+        $(".group-details").append(response);
+        $(".group-details").show();
+    })
+
+})
+$(".update").click(function () {
+    var id = $(".details").data("id");
+    var url = $(this).data("url") + "/" + id;
+    openDataInSideBar('#chat-sidebar', url);
+
+})
+$(".minthr-chat-content-back").click(function () {
+    $(".minthr-chat-main").hide();
+    $(".minthr-chat-users").show();
+});
+$(".minthr-chat-main-close").click(function (e) {
+    $(".minthr-chat-main").hide();
+    $(".minthr-chat-users").show();
+});
+$(".search-btn").click(function () {
+    $(".minthrh-chat-sidebar-header").empty();
+    $(".chat-search-input").appendTo(".minthrh-chat-sidebar-header");
+    $(".chat-search-input").removeAttr("hidden");
+});
+
+var cmp = 1;
+$(".minthr-chat-users-list").scroll(function () {
+    var element = $(this);
+    var url = element.data("action");
+    if (element.scrollTop() + element.innerHeight() >= element[0].scrollHeight - 1) {
+
+        $.get(url, {
+            Lenght: 2,
+            CurrentList: cmp
+        }).done(function (data) {
+            $("#ListScrole").append(data);
+        })
+        cmp++;
+    }
+});
+$("body").on("click", ".search-clear", function () {
+    //minthr-chat-main minthr-border-l empty
+    fetchContentAndDisplay("#ListScrole");
+});
+$(".minthr-chat-messages").scroll(function () {
+    var cpt = $(this).data("cpt");
+    var userid = $(this).data("id");
+    var isGroup = $("#isgroup").val();
+    console.log(isGroup);
+    if ($(this).scrollTop() === 0) {
+        $.post(messagesUrl, { recieverid: userid, isgroup: isGroup, currentlist: cpt })
+            .done(function (response) {
+                if (response != null) {
+                    console.log(response);
+                    $(".minthr-chat-messages").prepend(response);
+                    var newScrollTop = $(".minthr-chat-messages").scrollTop() + 100;
+                    $(".minthr-chat-messages").scrollTop(newScrollTop);
+                }
+            })
+            .fail(function (error) {
+                // Error callback
+                console.error('Error occurred during post request', error);
+            });
+        cpt++;
+        $(this).data("cpt", cpt);
+    }
+});
+$(".chat-search").keyup(function () {
+    $(".minthr-chat-main").hide();
+    var pageWidth = $(window).width();
+
+    if (pageWidth >= 480) {
+        $(".minthr-chat-main.empty").show();
+    }
+    var search = $(this).val();
+    $.get(ChatUserUrl, {
+        searchValue: search,
+    }).done(function (data) {
+        $("#ListScrole").empty();
+        $("#ListScrole").append(data);
+    })
+})
+$('#fileButton').click(function () {
+    $('#Files').click();
+});
+$("#Files").on("change", function () {
+    if ($(this)[0].files.length > 0) {
+        $("#fileButton").css("filter", "invert(1)");
+    } else {
+        $("#fileButton").css("filter", "invert(0)");
+    }
+});
+
+//submit message
+
+$(".chat-message-input").bind("enterKey", function (e) {
+    sendmessage(e);
+});
+$(".chat-message-input").keyup(function (e) {
+    if (e.keyCode == 13) {
+        $(this).trigger("enterKey");
+    }
+});
+
+
+$(".chat-send").click(function (event) {
+    sendmessage(event);
+});
+function sendmessage(event) {
+    var receiver = $("#receiver").val();
+    var message = $(".chat-message-input").val();
+    var isgroup = $("#isgroup").val();
+    $(".chat-message-input").val('');
+
+    // Get the file from the input element
+    var fileInput = $('#Files')[0];
+    var formData = new FormData();
+
+    // Add the files from the file input (if any)
+    var files = fileInput.files;
+    if (files.length > 0) {
+        for (var i = 0; i < files.length; i++) {
+            formData.append("files", files[i]);
+        }
+    }
+    $('#Files').val('');
+    $("#fileButton").css("filter", "invert(0)");
+    $(".chat-join img").attr("src", "/theme/assets/icons/join-gray-icon.svg");
+    // Add other form fields (e.g., receiver and message)
+    formData.append("recieverId", receiver);
+    formData.append("message", message);
+    formData.append("isGroup", isgroup);
+
+
+    if (receiver != "") {
+        $.ajax({
+            type: "POST",
+            url: sendmessageurl,
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (data) {
+                var lastmessage = message;
+                if (files.length > 1) {
+                    lastmessage = files[files.length - 1].name.substring(0, 30) + "....";
+                }
+                else if (message.length > 30) {
+                    lastmessage = message.substring(0, 30) + "....";
+                }
+                $(".minthr-chat-messages").append(data);
+                $("#" + receiver + " .w-50 .lastmessage").text(lastmessage);
+                $("#" + receiver + " .date").contents().first().replaceWith(getTime());
+                $(".minthr-chat-messages").scrollTop($(".minthr-chat-messages")[0].scrollHeight);
+
+            },
+            error: function () {
+            },
+        });
+
+    }
+    var userItem = $(".minthr-chat-user-item#" + receiver);
+
+    if (isgroup == "True") {
+        userItem.prependTo("#ListScrole");
+    } else {
+        userItem.detach().insertAfter(".groups-end");
+    }
+
+    $(".group").first().removeClass("groups-end minthr-border-b")
+    $(".group").last().addClass("groups-end minthr-border-b")
+    textarea.style.height = "auto";
+    event.preventDefault();
+}
+
+function newMessage(message, filemessage, fileid, filepath, mimType) {
+    //create a new message
+    var newMessage = $("<div>", { class: "chat-message chat-message-out" });
+    var avatarImage = $("<img>", { class: "chat-message-avatar", src: userimage, alt: "" });
+    var downloadIcon = $("<i>", { class: "fa fa-download", "aria-hidden": "true" });
+    var metaDiv = $("<div>", { class: "chat-message-meta" });
+    if (message != "") {
+        var contentDiv = $("<div>", { class: "chat-message-content", text: message });
+    }
+    if (fileid && filemessage == undefined && mimType != "image") {
+        contentDiv = $("<div>", { class: "chat-message-content DownLoadFile", text: message, 'data-id': fileid, 'data-name': message });
+        contentDiv.append(downloadIcon);
+    }
+    else if (fileid && filemessage == undefined && mimType == "image") {
+        contentDiv = $("<div>", { class: "chat-message-content" });
+        var img = $("<img>", { src: "/uploads/expensedoc?path=" + filepath, alt: "" });
+        contentDiv.append(img);
+    }
+    var timeSpan = $("<span>", { class: "chat-message-time", text: getTime() });
+    if (filemessage != undefined && mimType != "image") {
+        var filemessagediv = $("<div>", { class: "chat-message-content DownLoadFile", text: filemessage, 'data-id': fileid, 'data-name': filemessage });
+        filemessagediv.append(downloadIcon);
+        metaDiv.append(filemessagediv, contentDiv, timeSpan);
+    }
+    else if (filemessage != undefined && mimType == "image") {
+        filemessagediv = $("<div>", { class: "chat-message-content" });
+        var img = $("<img>", { src: "/uploads/expensedoc?path=" + filepath, alt: "" });
+        filemessagediv.append(img);
+        metaDiv.append(filemessagediv, contentDiv, timeSpan);
+    }
+    else {
+        metaDiv.append(contentDiv, timeSpan);
+    }
+
+    newMessage.append(avatarImage, metaDiv);
+
+    // Append the new message to the conversation div
+    $(".minthrh-chat-conversation").append(newMessage);
+    $(".minthrh-chat-conversation").scrollTop($(".minthrh-chat-conversation")[0].scrollHeight);
+    //clear the newMessage value
+    newMessage = undefined;
+
+    //bind download files method
+    DownloadChatFile();
+}

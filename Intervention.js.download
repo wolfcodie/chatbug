@@ -1,0 +1,248 @@
+﻿//var table = $("#Intervention");
+//$(function () {
+//    var filters = [];
+//    var columns = [];
+//    var col = [
+//        "reference",
+//        "typeIntervention",
+//        "#title",
+//        "#User",
+//       /* "nature",*/
+//        {
+//            "type": "status_label",
+//            "order": true,
+//            "name": "priority",
+//        },
+//        {
+//            "type": "date",
+//            "name": "demandOn"
+//        },
+//        {
+//            "type": "date",
+//            "name": "closedOn"
+//        },
+//        {
+//            "type": "status_label",
+//            "order": true,
+//            "name": "statut",
+//        },
+//    ];
+//    var colProfile = [
+//        "title",
+//        "type",
+//      /*  "nature",*/
+//        {
+//            "type": "status_label",
+//            "order": true,
+//            "name": "priority",
+//        },
+//        "typeIntervention",
+//        {
+//            "type": "date",
+//            "name": "demandOn"
+//        },
+//        {
+//            "type": "date",
+//            "name": "closedOn"
+//        },
+//        {
+//            "type": "status_label",
+//            "order": true,
+//            "name": "statut",
+//        },
+//    ];
+//    if (profile) {
+//        colums = colProfile;
+//    } else {
+//        colums = col;
+//    }
+//    var url = table.data("url");
+//    initDataTable('#Intervention', url, colums, "#dt_action", filters, undefined, undefined, undefined, undefined, callback);
+
+//    $('.search-input input').keyup(function () {
+//        table.DataTable().search($(this).val()).draw();
+//    });
+
+
+
+//    $('.popover').popover({
+//        trigger: 'click',
+//        placement: 'bottom',
+//        html: true,
+//        content: function () {
+//            var data = $(this).data("content");
+//            var content = $(data).html();
+//            return $(content);
+//        }
+//    });
+//});
+
+////function BindShowHistory(fullModal = false) {
+
+
+////    $(".bt-history").click(function () {
+////        var classes = $(this).attr("class");
+////        var table = classes.split(" ");
+////        if (table.includes("active")) {
+////            HideHistory()
+////        } else {
+////            ShowHistory()
+////        }
+////        GetHeight();
+////    });
+////    GetHeight();
+
+
+
+////    if (fullModal) {
+////        ShowHistory()
+////    }
+
+
+////    function HideHistory() {
+////        $(".bt-history").removeClass("active");
+////        $(".intervention-model-history").attr("hidden", true);
+////        $(".intervention-model-wrapper").css("grid-template-columns", "1fr");
+////        $(".modal-dialog").removeClass("ui-xl-dialog");
+////        $(".modal-dialog").addClass("normale-itervention-model");
+////    }
+////    function ShowHistory() {
+////        $(".bt-history").addClass("active");
+////        $(".intervention-model-history").removeAttr("hidden");
+////        $(".intervention-model-wrapper").css("grid-template-columns", "1fr 1fr");
+////        $(".modal-dialog").addClass("ui-xl-dialog");
+////        $(".modal-dialog").removeClass("normale-itervention-model");
+////        $(".intervention-model-history").animate({ scrollTop: 1608 }, 1000);
+////    }
+
+////}
+
+////function GetHeight() {
+////    var heigth = $(".itervention-details").height();
+////    $(".intervention-model-history").css("height", heigth);
+////}
+
+//function callback() {
+//    InitToolTipe();
+//}
+$(function () {
+    var table = $("#Intervention");
+    var _replaceUrl = table.data("url")
+    var filters = {};
+    if (profile) {
+        var col = [
+            "title",
+            "type",
+            {
+                "name": "priority",
+                "data": "priority",
+                "render": function (data) {
+                    return $("#priority_" + data).html();
+                }
+            },
+            "typeIntervention",
+
+            {
+                "type": "date",
+                "name": "demandOn",
+                "data": "demandOn",
+            },
+            {
+                "type": "date",
+                "name": "closedOn",
+                "data": "closedOn",
+            },
+            {
+                "name": "statut",
+                "data": "statut",
+                "render": function (data) {
+                    return $("#statut_" + data).html();
+                }
+            },
+            {
+                "type": "#dt_action",
+                "data": null,
+                "name": "action",
+                "order": false
+
+            },
+        ];
+    }
+    else {
+        var col = [
+            "reference",
+            "typeIntervention",
+            {
+                data: null, // Utilisez data: null pour indiquer que nous n'avons pas besoin de lier cette colonne à une seule propriété de données
+                render: function (data, type, row) {
+                    var title = row.title;
+                    var type = row.type; 
+                    var titleTypeTemplate = $("#TitleType").html();
+                    var containerHTML = titleTypeTemplate
+                        .replaceAll("{title}", title)
+                        .replaceAll("{type}", type);
+
+                    return containerHTML;
+                }
+            },
+            {
+                "data": "user",
+                "name": "user",
+                "render": function (data) {
+                    var userTemplate = $("#User").html();
+                    var containerHTML = "";
+                    var userHTML = userTemplate.replaceAll("%7B", "{").replaceAll("%7D", "}")
+                        .replaceAll("{fullname}", data["fullName"])
+                        .replaceAll("{site}", data["site"])
+                        .replaceAll("{departement}", data["departement"]);
+
+                    containerHTML += userHTML; // Ajoutez le HTML de l'utilisateur au contenu final
+
+
+
+
+                    return containerHTML;
+                }
+            },
+            {
+                "name": "priority",
+                "data": "priority",
+                "render": function (data) {
+                    return $("#priority_" + data).html();
+                }
+            },
+
+            {
+                "type": "date",
+                "name": "demandOn",
+                "data": "demandOn",
+            },
+            {
+                "type": "date",
+                "name": "closedOn",
+                "data": "closedOn",
+            },
+            {
+                "name": "statut",
+                "data": "statut",
+                "render": function (data) {
+                    return $("#statut_" + data).html();
+                }
+            },
+            {
+                "type": "#dt_action",
+                "data": null,
+                "name": "action",
+                "order": false
+
+            },
+        ];
+
+    }
+    dataTableManager = new DTManager(table, _replaceUrl, col, {
+        drawCallback: (settings) => {
+            InitToolTipe();
+        }
+    });;
+    dataTableManager.init();
+});

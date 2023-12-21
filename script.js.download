@@ -1,0 +1,924 @@
+function GetEmploy(user, id) {
+    var employCard = `<div class="row" data-userId="` + id + `"><div class="col"><div class="inline-user-box ">
+                        <div class="profile-avatar-box ">
+                            <img src="{src}" alt=" " class="profile-avatar ">
+                            </div>
+                            <div class="employ-card-infos">
+                                <p class="employ-name">{fullName}</p>
+                                <p class="employ-function">{fonction}</p>
+                            </div>
+                        </div>
+                    </div></div>`;
+    employCard = employCard.replace("{fullName}", user.fullName ? user.fullName : "");
+    employCard = employCard.replace("{fonction}", function () {
+        if (user.fonctionName == null) {
+            return "";
+        }
+        else
+            return user.fonctionName;
+    });
+    var src = ProfilImage(user.id, user.image);
+    employCard = employCard.replace("{src}", src);
+    return employCard;
+}
+
+function GetAbsencesClentsCard(Nom, Function, Photo) {
+    var res = `<div class="inline-user-box ">
+<div class="profile-avatar-box ">
+    <img src="/theme/assets/avatars/demo/`+ Photo + `" alt=" " class="profile-avatar ">
+    <a href="javascript:void(0) " class="user-crown ">
+        <img src="/theme/assets/icons/crown.svg " alt=" ">
+    </a>
+</div>
+<div class="employ-card-infos">
+    <p class="employ-name">`+ Nom + `</p>
+    <p class="employ-function">`+ Function + `</p>
+</div>
+<a href="" class="btn btn-user-more" id="item3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+<img src="/theme/assets/icons/more-vertical.svg" alt="">
+</a>
+<div class="dropdown-menu dropdown-menu-right ot-custom-dropdown-menu" aria-labelledby="item3">
+<a class="dropdown-item" href="" data-sidebar="sidebar-calendar" data-sidebar-target=".follow-up-absences">
+    <img src="/theme/assets/icons/sigma.svg" alt=""> Solde congé
+</a>
+
+<a class="dropdown-item" href="../Annuaire-Informations-personnelles-admin/profil-public.html">
+    <img src="/theme/assets/icons/notif-profile.svg" alt=""> Profil
+</a>
+</div>
+</div>`;
+    return res;
+}
+//Date for the calendar events (dummy data)
+function randomIntFromInterval(min, max) { // min and max included 
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+var date = new Date()
+var d = date.getDate(),
+    m = date.getMonth(),
+    y = date.getFullYear()
+
+
+
+
+
+// append datepiker 
+function getDatePicker(month, year) {
+    var datePiker = `
+        <a href="javascript:void(0)" class="calanderdate-picker date-month-picker" id="date-month-picker">
+        <img src="/theme/assets/icons/date.svg" alt="">
+        <span id="Datepicker">{month} {year}</span>
+        <i class="fa fa-angle-down" aria-hidden="true"></i>
+        </a>
+        `;
+    var date = new Date(year, month, 10)
+    datePiker = datePiker.replace("{month}",
+        date.toLocaleString('en-US', {
+            month: 'long',
+        }));
+    datePiker = datePiker.replace("{year}", year);
+    return datePiker;
+}
+var calendar;
+// initialisation of fullCalender
+var Month,
+    Year;
+var eventUrl, resourceUrl, timeLineView, clickUrl;
+var initialView = 'dayGridMonth';
+var SearchValue = "";
+let Filter = [
+    {
+        "FilterName": "TypeConge",
+        "FilterValue": ''
+    },
+    {
+        "FilterName": "Departemant",
+        "FilterValue": ''
+    },
+    {
+        "FilterName": "Site",
+        "FilterValue": ''
+    }
+]
+var $serchValue = "";
+var calenderTitleHeader = "title";
+var calenderRightHeader = "dayGridMonth,listYear";
+var calenderLeftHeader = "prev,next";
+var next = false;
+function InitFullCanedar(selector, serchValue = "", EventUrl, TimeLineView, ClickUrl, ResourceUrl, isEvents) {
+    var events = [];
+    if (TimeLineView != undefined)
+        timeLineView = TimeLineView;
+    clickUrl = ClickUrl;
+    if (timeLineView) {
+        calenderLeftHeader = "";
+        calenderTitleHeader = "";
+        calenderRightHeader = "";
+        initialView = 'resourceTimelineMonth';
+    }
+    var fullcalender = document.querySelector(selector);
+    eventUrl = EventUrl;
+
+
+    resourceUrl = ResourceUrl;
+    if (serchValue != undefined)
+        $serchValue = serchValue;
+
+
+    if (fullcalender) {
+        calendar = new FullCalendar.Calendar(fullcalender, {
+            resourceOrder: 'total',
+            schedulerLicenseKey: 'CC-Attribution-NonCommercial-NoDerivatives',
+            locale: window.value,
+            headerToolbar: {
+                left: calenderLeftHeader,
+                center: calenderTitleHeader,
+                right: calenderRightHeader
+            },
+            nextDayThreshold: '00:00:00',
+            views: {
+                listAllYears: {
+                    type: 'listYear',
+                },
+            },
+            initialView: initialView,
+            slotLabelContent: (e) => {
+                let num = moment(e.date).locale("fr").format("DD");
+                let name = moment(e.date).locale("fr").format("ddd");
+                e.text = num + " " + name;
+            },
+            aspectRatio: 1.5,
+            showNonCurrentDates: false,
+            resourceAreaWidth: "200px",
+            nextDayThreshold: '00:00:00',
+            resourceAreaColumns: [{
+                field: 'title',
+                headerContent: function (col) {
+                    if ($("th.fc-datagrid-cell").find('.fc-datagrid-cell-main').html() == "") {
+                        var topHead = '<div class="row align-items-center no-click">'
+                            + '<div class="col d-flex align-items-center gap-1">'
+                            + '<div class="ot-rounded bg-light-green">'
+                            + '<img src="/theme/assets/icons/users 4.svg" />'
+                            + '</div>'
+                            + '<p class="ot-tr-p-thick ot-bold effectif">Effectif</p>'
+                            + '</div>'
+                            + '<div class="col-auto">'
+                            + '<p class="ot-tr-p-thick ot-ds-green ot-bold effectif"><span id="CountConge"></span>/<span id="CountUsers"></span></p>'
+                            + '</div>'
+                            + '</div>';
+
+
+                        $("th.fc-datagrid-cell").find('.fc-datagrid-cell-main').html(topHead);
+                        $("th.fc-datagrid-cell").find('.fc-datagrid-cell-main').addClass("m-0");
+                        $("th.fc-datagrid-cell").find('.fc-datagrid-cell-cushion').addClass("w-100");
+                    }
+                    
+                },
+
+            }],
+            eventSources: [
+                {
+                    events: function (info, successCallback) {
+                        GetEvents(info, successCallback, EventUrl, isEvents);
+                    },
+
+                }
+            ],
+            displayEventTime: false,
+            resources: function (fetchInfo, successCallback) {
+                ResourceCalender(fetchInfo, successCallback)
+            },
+            resourceLabelContent: function (info) {
+                console.log(info);
+                var employCard = info.resource.title;
+                return { html: employCard };
+            },
+            eventClick: function (info) {
+                if (isEvents) {
+                    var id = info.event._def.extendedProps["eventId"];
+                    GetCongeSideModal(event, clickUrl + "/" + id);
+                } else {
+                    if (!info.event._def.extendedProps["isHoliday"]) {
+                        var id = info.event._def.extendedProps["demande"];
+                        GetCongeSideModal(event, clickUrl + "/" + id, undefined, false, true);
+                    }
+                }
+                
+            },
+            resourceLabelDidMount: function ({ el, fieldValue }) {
+                $(el).find(".fc-datagrid-cell-main").empty();
+                $(el).find(".fc-datagrid-cell-main").html(fieldValue);
+            }, eventContent: function (info) { },
+            eventDidMount: function ({ el, view, event }) {
+                //var ch = "<div class='row'>"
+                //    + "<div class='col'>"
+                //    + "<p class='ot-bold'>{test1}</p><p>{test2}</p>"
+                //    + "</div>"
+                //    + "</div>"
+                //    + "<span class='eventsideborder' style='background-color:{color}'></span >";
+
+                if (view.type == "resourceTimelineMonth") {
+                        $(el).attr("tabindex", "0");
+                        $(el).attr("data-toggle", "tooltip");
+                    $(el).attr("title", event.extendedProps.description);
+                    if (event.extendedProps.isHoliday) {
+                        $(el).find(".fc-event-title").html("");
+                        $(el).find(".fc-event-title").html("<i class='fa fa-bookmark'></i>");
+                        $(el).data("sidebar", "sidebar-calendar");
+                        $(el).data("sidebar-target", ".event-requests-sidebar");
+                        $(el).css("background-color", "transparent");
+                        $(el).css("border-color", "transparent");
+                        $(el).find(".fc-event-title").css("color", "#69696991");
+                        $(el).find(".fc-event-title").css("font-size", "calc(var(--mintrh-unit) * 25)");
+                    } else {
+                        //var nbr = event.extendedProps.fauTitle.split(" ");
+                        //ch = ch.replace("{test1}", nbr[0]).replace("{test2}", nbr[1]).replace("{color}", $(el).find("span.eventsideborder").css("background-color"));
+                        //$(el).html(ch);
+                        $(el).append("<span class='eventsideborder'></span>");
+                        /*change span color  event.extendedProps.textColor*/
+                        $(el).find(".eventsideborder").css("background-color", event._def.ui.textColor);
+                        $(el).attr("data-sidebar", "sidebar-calendar");
+                        $(el).attr("data-sidebar-target", ".event-requests-sidebar");
+                        var nbr = event.extendedProps.fauTitle.split(" ");
+                        $(el).find(".fc-event-title.fc-sticky").empty();
+                        $(el).find(".fc-event-title.fc-sticky").html("");
+                        $(el).find(".fc-event-title.fc-sticky").html(`<p class="ot-bold">` + nbr[0] + `</p><p>` + nbr[1] + `</p>`);
+                        /*change text color event.extendedProps.textColor*/
+                        $(el).find(".fc-event-title.fc-sticky").css("color", event._def.ui.textColor );
+                        $(el).parent().css("z-index", "99");
+                        
+                    }
+                    
+                }
+                if (view.type == "listYear") {
+                    $(el).find('.fc-list-event-title')
+                        .html(`<div class="event-calendar-list-view">
+                                <p>` + moment(event.extendedProps.startDate).format('L') + ` - ` + moment(event.extendedProps.endDate).format('L') + `</p>
+                                <p>` + event.extendedProps.type + `</p>
+                                <p>` + event._def.title + `</p>
+                    </div>`);
+
+                }
+                InitToolTipe();
+            },
+            datesSet: (function () {
+                    calendar.refetchEvents();
+            }),
+
+        });
+
+        calendar.render();
+        
+        if ($('.fc-scroller').length) {
+            $('.fc-scroller').addClass('success-scroll');
+        }
+        bindElement();
+
+        setTimeout(() => {
+            $('body').find('.datetimepicker').find('th.prev').empty().append('<i class="fa fa-angle-left" aria-hidden="true"></i>');
+            $('body').find('.datetimepicker').find('th.next').empty().append('<i class="fa fa-angle-right" aria-hidden="true"></i>');
+        }, 100);
+
+        return calendar;
+    }
+}
+
+
+function GetSideBarCalender(event, url) {
+    $.get(url).done(function (data) {
+        $('.ot-profile').removeClass("in");
+        if (data.error != undefined) {
+            ShowMessage(data.message, "error");
+
+        } else {
+
+            if (data.type != "" || data.type != null) {
+                $('#SideBar').addClass("in");
+                // $('.ot-profile').removeClass("in");
+                $('#SideBar').html(data);
+            } else {
+                ShowMessage("demande null", "error");
+            }
+        }
+    })
+}
+function bindElement() {
+
+    /*============= Seatch filter popover ===================*/
+
+
+    $(".search-input input").keyup(function () {
+        $serchValue = $(this).val();
+        calendar.refetchEvents();
+        calendar.refetchResources();
+        var date;
+        if (Month == undefined && Year == undefined) {
+            date = new Date();
+        } else {
+            date = new Date(Year, Month);
+        }
+        calendar.gotoDate(date);
+        InitToolTipe();
+    })
+
+
+
+    $('.popover-absences-type-filter').popover({
+        trigger: 'click',
+        placement: 'bottom',
+        html: true,
+        content: function () {
+            return $($("#PopOverConge").html());
+        }
+    });
+
+    $('.popover-absences-type-filter').on('show.bs.popover', function (e) {
+        setTimeout(() => {
+            $('body').find('.popover-saerch-filter-template').closest('.popover')
+                .addClass('popover-filter-root');
+        }, 100);
+    })
+
+    /*============= /.Seatch filter popover ===================*/
+    /*============= Seatch filter popover ===================*/
+
+    $('.popover-filter-departement').popover({
+        trigger: 'click',
+        placement: 'bottom',
+        html: true,
+        content: function () {
+            return $($("#PopOverDepartment").html())
+        }
+    });
+
+    $('.popover-filter-departement').on('show.bs.popover', function (e) {
+        setTimeout(() => {
+            $('body').find('.popover-filter-departement-template').closest('.popover')
+                .addClass('popover-filter-root');
+        }, 100);
+    })
+
+    /*============= /.Seatch filter popover ===================*/
+    /*============= Seatch filter popover ===================*/
+
+    $('.popover-filter-site').popover({
+        trigger: 'click',
+        placement: 'bottom',
+        html: true,
+        content: function () {
+            return $($("#PopOverSite").html())
+        }
+    });
+
+    $('.popover-filter-site').on('show.bs.popover', function (e) {
+        setTimeout(() => {
+            $('body').find('.popover-site-filter-template').closest('.popover')
+                .addClass('simple-list-popover-template');
+        }, 100);
+    })
+
+    /*============= /.Seatch filter popover ===================*/
+    /*============= Seatch filter popover ===================*/
+
+    $('.absences-demands-list-popover').popover({
+        trigger: 'click',
+        placement: 'bottom',
+        html: true,
+        content: function () {
+            return $(
+                $("#DemandeConge").html()
+            );
+        }
+    });
+
+    $('.absences-demands-list-popover').on('show.bs.popover', function (e) {
+        setTimeout(() => {
+            $('body').find('.popover-saerch-filter-template').closest('.popover')
+                .addClass('simple-list-popover-template');
+        }, 100);
+    })
+
+    $('.absences-list-popover').popover({
+        trigger: 'click',
+        placement: 'bottom',
+        html: true,
+        content: function () {
+            return $($("#CongeStatistic").html())
+        }
+    });
+
+    $('.absences-list-popover').on('show.bs.popover', function (e) {
+        setTimeout(() => {
+            $('body').find('.popover-saerch-filter-template').closest('.popover')
+                .addClass('simple-list-popover-template');
+        }, 100);
+    })
+
+    /*============= /.Seatch filter popover ===================*/
+}
+function ResourceCalender(fetchInfo, successCallback) {
+    if (timeLineView) {
+        $.ajax({
+            url: resourceUrl,
+            type: 'get',
+            data: {
+                Month: Month,
+                Year: Year,
+                SearchValue: $serchValue,
+                Filter: Filter
+            },
+            success: function (data) {
+                var res = [];
+
+                for (var i = 0; i < data.length; i++) {
+                    res.push({
+                        id: data[i].id,
+                        title: GetEmploy(data[i].user, data[i].user.id),
+                    });
+                }
+                $(".fc-datagrid-body").remove();
+                successCallback(res);
+
+                var data = {
+                    Month: Month,
+                    Year: Year,
+                    Filter: Filter
+                };
+                GetEffectif(data);
+                /*get effectif from server*/
+                BindClickResource()
+
+
+            }
+        });
+    }
+    else return;
+}
+
+
+
+
+
+function GetEvents(info, method, eventsUrl, IsEvents) {
+    
+    var events = [];
+    if (IsEvents) {
+        var data = {
+            Month: info.start.getMonth(),
+            Year: info.start.getFullYear(),
+            IsFullYear: false,
+            Filters: Filter
+        };
+        var diff = Math.abs(info.end - info.start);
+        var diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+        if (diffDays == 365 || diffDays == 366)
+            data.IsFullYear = true;
+
+        $.ajax({
+            url: eventsUrl,
+            dataType: 'json',
+            type: 'get',
+            data: data,
+            success: function (output) {
+                events = [];
+                for (var i = 0; i < output.length; i++) {
+                    events.push({
+                        title: output[i].title,
+                        type: output[i].type,
+                        start: output[i].start,
+                        startDate: output[i].startDate,
+                        endDate: output[i].endDate,
+                        end: output[i].end,
+                        backgroundColor: output[i].backgroundColor,
+                        borderColor: output[i].borderColor,
+                        allDay: true,
+                        eventId: output[i].eventId,
+                    })
+                }
+                method(events);
+                InitToolTipe();
+                $("div").scrollTop();
+
+
+            }
+        });
+    } else {
+        var data = {
+            Month: Month,
+            Year: Year,
+            Filters: Filter
+        };
+        $.ajax({
+            url: eventsUrl,
+            dataType: 'json',
+            type: 'get',
+            data: data,
+            success: function (output) {
+                method(output);
+                InitToolTipe();
+
+            }
+        });
+    }
+    
+}
+
+function FilterCalendar(input) {
+    var ids = FilerIds(input);
+    var count = 0;
+    var filterName = $(input).data("name");
+    
+        $("#" + filterName).addClass("active");
+        for (var i = 0; i < Filter.length; i++) {
+            if (Filter[i]["FilterName"] == filterName) {
+                Filter[i]["FilterValue"] = ids;
+                var table = Filter[i]["FilterValue"].split(",");
+                count = table.length;
+            }
+        }
+        
+        calendar.refetchEvents();
+        calendar.refetchResources();
+        var data = {
+            Month: Month,
+            Year: Year,
+            Filters: Filter
+        };
+        GetEffectif(data)
+        var date;
+        if (Month == undefined && Year == undefined) {
+            date = new Date();
+        } else {
+            date = new Date(Year, Month);
+        }
+        calendar.gotoDate(date);
+        InitToolTipe();
+        
+    if (ids == "") {
+        count = 0;
+    }
+    if (count == 0) {
+        $("#" + filterName).find(".count").attr("hidden", true);
+        $("#" + filterName).removeClass("active");
+        
+    } else {                      
+        $("#" + filterName).find(".count").removeAttr("hidden");
+        $("#" + filterName).find(".count > p").html(count);
+    }
+   
+}
+
+
+function FilterCalendarConge(id, Add = true) {
+    if (Add) {
+        for (var i = 0; i < Filter.length; i++) {
+            if (Filter[i]["FilterName"] == "TypeConge") {
+                if (Filter[i]["FilterValue"] == "") {
+                    Filter[i]["FilterValue"] = String(id);
+                } else {
+                    Filter[i]["FilterValue"] = Filter[i]["FilterValue"] + "," + id;
+                }
+            }
+        }
+    } else {
+        for (var i = 0; i < Filter.length; i++) {
+            if (Filter[i]["FilterName"] == "TypeConge") {
+                var table = Filter[i]["FilterValue"].split(",");
+                if (table.includes(String(id))) {
+                    table = jQuery.grep(table, function (value) {
+                        return value != id;
+                    });
+                    Filter[i]["FilterValue"] = table.join(",");
+                }
+                
+            }
+        }
+    }
+    
+    calendar.refetchEvents();
+    calendar.refetchResources();
+
+    var data = {
+        Month: Month,
+        Year: Year,
+        Filters: Filter
+    };
+    GetEffectif(data)
+    var date;
+    if (Month == undefined && Year == undefined) {
+        date = new Date();
+    } else {
+        date = new Date(Year, Month);
+    }
+    calendar.gotoDate(date);
+    InitToolTipe();
+}
+
+
+
+
+
+$(".left-arrow-calender").click(function (e) {
+    e.preventDefault();
+    calendar.prev();
+    var FC_date = calendar.getDate();
+
+    Month = FC_date.getMonth();
+    Year = FC_date.getFullYear();
+    calendar.refetchResources();
+    calendar.refetchEvents();
+    var datePikerHtml = moment(calendar.getDate()).format('MMM yyyy');
+    $("#Datepicker").html(datePikerHtml);
+    InitToolTipe();
+});
+$(".right-arrow-calender").click(function (e) {
+    e.preventDefault();
+    next = true;
+    calendar.next();
+    var FC_date = calendar.getDate();
+    Month = FC_date.getMonth();
+    Year = FC_date.getFullYear();
+    calendar.refetchResources();
+    calendar.refetchEvents();
+    var datePikerHtml = moment(FC_date).format('MMM yyyy');
+    $("#Datepicker").html(datePikerHtml);
+    InitToolTipe();
+});
+
+
+
+function InitFullCalenderProfule(url, ClickUrl) {
+    var events = [];
+    var isList = false;
+    /*  ================================================================*/
+    /*  ================= init and add calendar absences  helpers ===============*/
+    /*  ================================================================*/
+
+
+    /* initialize the calendar
+    -----------------------------------------------------------------*/
+
+    // get calendar absences element 
+    var nv_conges_calendar = document.getElementById('nv_conges_calendar');
+
+
+
+    var calendarProfile = new FullCalendar.Calendar(nv_conges_calendar, {
+
+        locale: 'fr',
+        // plugins: [ 'list' ],
+
+        headerToolbar: {
+            left: 'title prev,next',
+            center: '',
+            right: 'dayGridMonth,listYear'
+        },
+        eventDisplay: 'block',
+        // initialView: 'resourceTimelineMonth',
+        views: {
+            listAllYears: {
+                type: 'listYear',
+                // duration: { years: 999 },
+            },
+        },
+        listDayFormat: { month: 'long' },
+        listDayFormat: { month: 'long' },
+        slotLabelContent: (e) => {
+            let num = moment(e.date).locale("fr").format("DD");
+            let name = moment(e.date).locale("fr").format("ddd");
+            e.text = num + " " + name;
+        },
+        showNonCurrentDates: false,
+        aspectRatio: 1.5,
+        nextDayThreshold: '00:00:00',
+        eventSources: [
+            {
+                events: function (info, successCallback) {
+                    var data = {
+                        Month: info.start.getMonth(),
+                        Year: info.start.getFullYear(),
+                        IsProfile: true,
+                        IsList: isList
+                    };
+                    var diff = Math.abs(info.end - info.start);
+                    var diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+                    if (diffDays == 365 || diffDays == 366)
+                        data.IsFullYear = true;
+
+
+                    $.ajax({
+                        url: url,
+                        data: data,
+                        success: function (output) {
+                            events = [];
+                            for (var i = 0; i < output.length; i++) {
+                                events.push({
+                                    eventId: output[i].eventId,
+                                    title: output[i].title,
+                                    start: new Date(output[i].start),
+                                    end: new Date(output[i].end),
+                                    color: output[i].color,
+                                    type: output[i].type,
+                                    startText: output[i].startText,
+                                    endText: output[i].endText,
+                                    demande: output[i].demande,
+                                    isHoliday: output[i].isHoliday
+                                })
+                            }
+                            successCallback(events);
+                        }
+                    });
+                },
+
+            }
+        ],
+        datesSet: (function (output) {
+            if (output.view.type == "listYear")
+                isList = true;
+            else
+                isList = false;
+
+            calendarProfile.refetchEvents();
+            setTimeout(function () {
+                $("#nv_conges_calendar").find(".fc-event-title").each(function () {
+                    var parent = $(this).closest(".fc-daygrid-day-events");
+                    //parent.parent().parent().find(".fc-daygrid-day-frame > .fc-daygrid-day-top > a").addClass("text-black");
+                    $(this).closest("a.fc-daygrid-event").css()
+                })
+            }, 100)
+
+        }),
+        displayEventTime: false,
+        eventDidMount: function ({ el, event, view }) {
+            if (view.type == "dayGridMonth") {
+                if (event._def.extendedProps.isHoliday) {
+                    $(el).addClass("fullcalender-holiday");
+                    $(el).find(".fc-event-title-container > .fc-event-title.fc-sticky").html();
+                    $(el).attr("data-tooltip", "tooltip");
+                    $(el).attr("title", event._def.title);
+                    $(el).find(".fc-event-title.fc-sticky").html("");
+                    setTimeout(function() {
+                        $(el).parent().css("margin-top", "0");
+                    InitToolTipe();
+                    }, 100)
+                } else {
+                    $(el).find('.fc-event-title')
+                        .html("");
+                    $(el).attr("id", "Event_" + event._def.extendedProps.eventId);
+                    
+                    $(el).parent().append('<div class="tooltip-prifle-calender eventclickcalendar" data-id="Event_' + event._def.extendedProps.eventId + '" data-tooltip="tooltip" title="' + event._def.extendedProps.type + '"></div>');
+                    
+
+                    $(".eventclickcalendar").click(function () {
+                        var id = $(this).data("id");
+                        $("#" + id)[0].click();
+                    });
+                    $('[data-tooltip="tooltip"]').tooltip();
+                }
+                
+            } else
+                if (view.type == "listYear") {
+                    $(el).find('.fc-list-event-title')
+                        .html(`<div class="nv-calendar-list-view-conge">
+                                <p>` + moment(event.extendedProps.startText).format('L') + ` - ` + moment(event.extendedProps.endText).format('L') + `</p>
+                                <p>` + event.extendedProps.type + `</p>
+                                <p>` + event._def.title + `</p>
+                    </div>`);
+
+                }
+
+            
+        },
+        viewDidMount: function (output) {
+           
+            if (output.view.type != "dayGridMonth")
+                $('.fc-scroller').addClass('success-scroll');
+            else
+                $('.fc-scroller').css("overflow", "hidden");
+            
+        },
+        eventClick: function (arg) {
+            if (arg.event._def.extendedProps["demande"] != "") {
+                var id = arg.event._def.extendedProps["demande"];
+                GetCongeSideModal(event, ClickUrl + "/" + id, undefined, false, true);
+            }
+            
+        },
+        dateClick: function (arg) {
+            var events = calendarProfile.getEvents();
+            for (var i = 0; i < events.length; i++) {
+                
+                if (moment(arg.date).startOf('day').isBetween(moment(events[i].start).startOf('day'), moment(events[i].end).startOf('day'), null, '[]')) {
+                    var id = events[i]._def.extendedProps["demande"];
+                    GetCongeSideModal(event, ClickUrl + "/" + id, undefined, false, true);
+                    break;
+                }
+                
+            }
+        },
+    });
+
+
+
+    calendarProfile.render();
+    $('.fc-scroller').addClass('success-scroll');
+
+
+
+    
+
+    return calendar;
+
+    // end init 
+
+    /*  ================================================================*/
+    /*  ================= ./init and add calendar absences  helpers ===============*/
+    /*  ================================================================*/
+
+    
+};
+$(function () {
+
+
+    if ($("#emptyFilter").length) {
+        $("#emptyFilter").click(function () {
+            for (var i = 0; i < Filter.length; i++) {
+                Filter[i].FilterValue = "";
+            }
+            $(".Filters").each(function() {
+                $(this).find(".count > p").html("0");
+                $(this).find(".count").attr("hidden", true);
+            })
+            
+            calendar.refetchEvents();
+            calendar.refetchResources();
+            $(".Filters").removeClass("active");
+            $(".popover-body input[type='checkbox']").each(function () {
+                $(this).prop("checked", false);
+            })
+        })
+    }
+})
+
+function GetEffectif(data) {
+    $.get(EffectifUrl, data).done(function (data) {
+        $("#CountUsers").html(data.totalUsers);
+        $("#CountConge").html(data.filterUsers);
+        $(".fc-datagrid-header.fc-scrollgrid-sync-table").parent().addClass("no-scroll");
+    })
+}
+
+function GetCongeSideModal(e, url) {
+
+
+    if (e != undefined)
+        e.preventDefault();
+
+    $.get(url).done(function (data) {
+        if (data.error != undefined) {
+            ShowMessage(data.message, "error");
+
+        } else {
+
+            $("#holder").html(data);
+
+            $(".details-sidebar").addClass("open");
+            $("#holder").toggleClass("open");
+            $("body").toggleClass("fixed");
+            IniMdbInputs();
+            InitSelect();
+            InitDatePicker(window.value);
+            dt = new DataTransfer();
+            $(".setting-btn").click(function () {
+                $(".details-sidebar").addClass("open");
+            })
+
+
+            $(".details-secend-sidebar-close").click(function () {
+                $(".details-secend-sidebar").removeClass("open");
+            })
+
+
+            $(".details-sidebar-close").click(function () {
+                $(".details-sidebar").removeClass("open");
+
+                $("#holder").toggleClass("open");
+                $("body").toggleClass("fixed");
+            })
+
+        }
+    });
+}
+
+function onSuccessEditDemandConge(res) {
+    onSuccess(res)
+    if (res.success) {
+        $(".details-sidebar").removeClass("open");
+
+        $("#holder").toggleClass("open");
+        $("body").toggleClass("fixed");
+
+    }
+}

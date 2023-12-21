@@ -1,0 +1,209 @@
+﻿//function GetDemandModal(e, url, NoAnnimation = false, openHistory = false) {
+    
+
+//    if (e != undefined)
+//        e.preventDefault();
+
+//    $.get(url).done(function (data) {
+//        if (data.error != undefined) {
+//            ShowMessage(data.message, "error");
+
+//        } else {
+
+            
+//            if (!NoAnnimation) {
+//                $("#holder").html(data);
+//                $(".details-sidebar").addClass("open");
+//            } else {
+//                var newBody = $(data).find(".details-sidebar").html();
+//                $("#holder").find(".details-sidebar").html(newBody);
+//            }
+            
+//            $("#holder").addClass("open");
+//            $("body").addClass("fixed");
+//            IniMdbInputs();
+//            InitSelect();
+//            InitDatePicker(window.value);
+//            dt = new DataTransfer();
+//            $(".setting-btn").click(function () {
+//                $(".details-sidebar").addClass("open");
+//            })
+
+//            $(".details-sidebar-close").click(function () {
+//                $(".details-sidebar").removeClass("open");
+//                $(".details-secend-sidebar").removeClass("open");
+//                $("#holder").toggleClass("open");
+//                $("body").toggleClass("fixed");
+//            })
+
+//            $(".details-secend-sidebar-close").click(function () {
+//                HidModel(".bt-history");
+//            })
+
+
+//            $(".more-modal").click(function () {
+
+//                var classes = $(this).attr("class");
+//                var table = classes.split(" ");
+//                if (table.includes("active")) {
+//                    HidModel(this);
+//                }
+//                else {
+//                    ShowHistory(this)
+//                }
+//            })
+
+//            $(".details-secend-sidebar-close").click(function () {
+//                $(".details-secend-sidebar").removeClass("open");
+//            })
+
+//            if (openHistory) {
+//                ShowHistory(".more-modal")
+//            }
+//        }
+//    });
+    
+
+        
+//    function ShowHistory(btn) {
+//        var url = $(btn).data("url");
+//        $.get(url).done(function (data) {
+//            console.log($(".details-secend-sidebar").find(".details-content"));
+//            $(".details-secend-sidebar").find(".details-content").html(data);
+//            $(".details-secend-sidebar").addClass("open");
+//        })
+//        $(btn).addClass("active");
+//        $(btn).parent().find("ul.action").addClass("active");
+//        $(btn).find("img").attr("src", "/icons/history-active.svg");
+//    }
+//    function HidModel(div) {
+//        $(".details-secend-sidebar").toggleClass("open");
+//        $(div).parent().find("ul.action").toggleClass("active");
+//        $(div).toggleClass("active");
+//        $(div).find("img").attr("src", "/icons/history.svg");
+//    }
+//}
+function BindReadMore() {
+    $(".not-all-description").each(function () {
+
+        if ($(this).html().trim().length >= 75) {
+            var id = $(this).attr("id");
+            $("[data-target='#" + id + "']").removeAttr("hidden");
+        } else {
+            $("[data-target='#" + id + "']").attr("hidden", true);
+        }
+    })
+
+    $(".read-more").click(function () {
+        var target = $(this).data("target");
+        $(target).toggleClass("oneline");
+    })
+}
+
+function binCloseSecendModel() {
+    $(".details-secend-sidebar-close").click(function () {
+        $(".more-modal").removeClass("active");
+        $(".more-modal").find("img").attr("src", "/icons/history.svg");
+
+    })
+}
+
+function OnCompleteDelete() {
+    $(".holder").removeClass("open");
+    $("body").removeClass("fixed");
+}
+
+function Valid(e, $this) {
+    e.preventDefault();
+    $($this).prop("disabled");
+    $('#file').val("");
+    loading("#excel_table_div", "en cours")
+    dataSource = JSON.stringify(dataSource);
+    var url = $($this).data("url");
+    $.ajax({
+        url: url,
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: dataSource,
+        success: function (result) {
+            if (result.success) {
+                ShowMessage(result.message, "success");
+                $("#excel_table_div").hide();
+            }
+            else ShowMessage(result.message, "error")
+        },
+        error: function (xhr, desc, err) {
+        }
+    });
+    Removeloading("#excel_table_div")
+}
+function deleterow(e, url, id) {
+    e.preventDefault();
+    dataSource = RemoveNode(id)
+    table.fnClearTable();
+    if (dataSource.length != 0) {
+        table.fnAddData(dataSource);
+    }
+    // Add new data
+}
+function RemoveNode(id) {
+    return dataSource.filter(function (data) {
+        if (data.id == id) {
+            return false;
+        }
+        return true;
+    });
+}
+
+/*var dataSource = [];*/
+$(function () {
+    $('#file').on("change", function () {
+        var files = $(this).prop("files");
+        var formData = new FormData();
+        var url = $(this).data("url");
+        formData.append("file", files[0]);
+        var fileName = $(this).val().split("\\").pop();
+        $(".upload-progress").attr("data-percentage", "100");
+        $("#actions p").html(fileName)
+        $.ajax({
+            url: url,
+            type: "post",
+            dataType: "JSON",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (jsonData) {
+                
+                if (jsonData.error != undefined) {
+                    ShowMessage(jsonData.message, "error");
+                } else {
+                    if (jsonData.length > 0) {
+                        dataSource = jsonData
+                        //table.fnClearTable();
+                        table.fnAddData(dataSource);
+
+                    }
+                    $("#excel_table_div").removeAttr("hidden");
+                }
+
+
+            },
+            error: function (xhr, desc, err) {
+            }
+        });
+    });
+})
+
+function RemoveEmptyMore() {
+    $("table").find(".sos-group-more").each(function () {
+        if ($(this).html().trim() == "0") {
+            $(this).remove();
+        }
+    })
+    $("table").find(".sos-group-users.material").each(function () {
+        if ($(this).html().trim() == "") {
+            $(this).html("----");
+        }
+    })
+}
